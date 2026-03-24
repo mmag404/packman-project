@@ -86,18 +86,117 @@ def depthFirstSearch(problem: SearchProblem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from util import Stack
+
+    # Stack for DFS
+    stack = Stack()
+
+    # Each element = (state, path_to_state)
+    start = problem.getStartState()
+    stack.push((start, []))
+
+    # Visited set to avoid revisiting nodes
+    visited = set()
+
+    while not stack.isEmpty():
+
+        state, path = stack.pop()
+
+        # If already visited → skip
+        if state in visited:
+            continue
+
+        # Mark as visited
+        visited.add(state)
+
+        # Check goal
+        if problem.isGoalState(state):
+            return path
+
+        # Expand successors
+        for successor, action, cost in problem.getSuccessors(state):
+
+            if successor not in visited:
+                new_path = path + [action]
+                stack.push((successor, new_path))
+
+    # If no solution found
+    return []
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    from util import Queue
+
+    # Queue for BFS
+    queue = Queue()
+
+    # Each element = (state, path_to_state)
+    start = problem.getStartState()
+    queue.push((start, []))
+
+    # Visited set
+    visited = set()
+    visited.add(start)
+
+    while not queue.isEmpty():
+
+        state, path = queue.pop()
+
+        # Goal check
+        if problem.isGoalState(state):
+            return path
+
+        # Expand successors
+        for successor, action, cost in problem.getSuccessors(state):
+
+            if successor not in visited:
+                visited.add(successor)
+                new_path = path + [action]
+                queue.push((successor, new_path))
+
+    return []
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    from util import PriorityQueue
+
+    # Priority Queue ordered by total cost
+    pq = PriorityQueue()
+
+    start = problem.getStartState()
+
+    # Each element = (state, path, cost_so_far)
+    pq.push((start, [], 0), 0)
+
+    # Dictionary to track lowest cost to each state
+    visited = {}
+
+    while not pq.isEmpty():
+
+        state, path, cost = pq.pop()
+
+        # If visited with lower cost before → skip
+        if state in visited and visited[state] <= cost:
+            continue
+
+        # Record best cost
+        visited[state] = cost
+
+        # Goal check
+        if problem.isGoalState(state):
+            return path
+
+        # Expand successors
+        for successor, action, stepCost in problem.getSuccessors(state):
+
+            new_cost = cost + stepCost
+            new_path = path + [action]
+
+            pq.push((successor, new_path, new_cost), new_cost)
+
+    return []
 
 def nullHeuristic(state, problem=None):
     """
@@ -108,8 +207,43 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    from util import PriorityQueue
+
+    pq = PriorityQueue()
+    start = problem.getStartState()
+
+    # (state, path, cost_so_far)
+    pq.push((start, [], 0), heuristic(start, problem))
+
+    # best cost to each state
+    visited = {}
+
+    while not pq.isEmpty():
+
+        state, path, cost = pq.pop()
+
+        # Skip if we already found a cheaper path
+        if state in visited and visited[state] <= cost:
+            continue
+
+        visited[state] = cost
+
+        # Goal check
+        if problem.isGoalState(state):
+            return path
+
+        # Expand successors
+        for successor, action, stepCost in problem.getSuccessors(state):
+
+            new_cost = cost + stepCost
+            new_path = path + [action]
+
+            priority = new_cost + heuristic(successor, problem)
+
+            pq.push((successor, new_path, new_cost), priority)
+
+    return []
 
 
 # Abbreviations
