@@ -431,37 +431,55 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchFunction = lambda prob: search.aStarSearch(prob, foodHeuristic)
         self.searchType = FoodSearchProblem
 
-def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
-    """
-    Your heuristic for the FoodSearchProblem goes here.
-
-    This heuristic must be consistent to ensure correctness.  First, try to come
-    up with an admissible heuristic; almost all admissible heuristics will be
-    consistent as well.
-
-    If using A* ever finds a solution that is worse uniform cost search finds,
-    your heuristic is *not* consistent, and probably not admissible!  On the
-    other hand, inadmissible or inconsistent heuristics may find optimal
-    solutions, so be careful.
-
-    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a Grid
-    (see game.py) of either True or False. You can call foodGrid.asList() to get
-    a list of food coordinates instead.
-
-    If you want access to info like walls, capsules, etc., you can query the
-    problem.  For example, problem.walls gives you a Grid of where the walls
-    are.
-
-    If you want to *store* information to be reused in other calls to the
-    heuristic, there is a dictionary called problem.heuristicInfo that you can
-    use. For example, if you only want to count the walls once and store that
-    value, try: problem.heuristicInfo['wallCount'] = problem.walls.count()
-    Subsequent calls to this heuristic can access
-    problem.heuristicInfo['wallCount']
-    """
+def foodHeuristic(state, problem):
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    foodList = foodGrid.asList()
+
+    # Goal state
+    if not foodList:
+        return 0
+
+    from util import manhattanDistance
+
+    # 1) Distance from Pacman to closest food
+    minDist = min(manhattanDistance(position, food) for food in foodList)
+
+    # 2) MST over food using Prim's algorithm
+    # Cache distances to avoid recomputation
+    if 'distances' not in problem.heuristicInfo:
+        problem.heuristicInfo['distances'] = {}
+
+    dist_cache = problem.heuristicInfo['distances']
+
+    def getDist(p1, p2):
+        key = (p1, p2)
+        if key not in dist_cache:
+            dist_cache[key] = manhattanDistance(p1, p2)
+            dist_cache[(p2, p1)] = dist_cache[key]
+        return dist_cache[key]
+
+    # Prim's algorithm
+    unvisited = set(foodList)
+    current = unvisited.pop()
+    visited = {current}
+    total_mst_cost = 0
+
+    while unvisited:
+        min_edge = float('inf')
+        next_node = None
+
+        for v in visited:
+            for u in unvisited:
+                d = getDist(v, u)
+                if d < min_edge:
+                    min_edge = d
+                    next_node = u
+
+        total_mst_cost += min_edge
+        visited.add(next_node)
+        unvisited.remove(next_node)
+
+    return minDist + total_mst_cost
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
